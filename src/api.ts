@@ -203,8 +203,7 @@ export async function fetchStXTZOperations(): Promise<StakingOperation[]> {
   // Collect all withdrawal operations that need price conversion (fallback only)
   const withdrawals: { op: StXTZResponse; stxtzAmount: number }[] = [];
   
-  // Track converted withdrawal amounts for matching analysis
-  const convertedWithdrawals: number[] = [];
+
   
   for (const op of data) {
     const entrypoint = op.parameter.entrypoint;
@@ -244,11 +243,7 @@ export async function fetchStXTZOperations(): Promise<StakingOperation[]> {
     }
   }
   
-  // Get finalize amounts for matching analysis
-  const finalizeAmounts: number[] = operations
-    .filter(op => op.type === 'finalize')
-    .map(op => op.amount);
-  
+
   // Load cache and process withdrawals with hash-based lookup
   const withdrawalCache = loadWithdrawalCache();
   let cacheHits = 0;
@@ -312,7 +307,6 @@ export async function fetchStXTZOperations(): Promise<StakingOperation[]> {
         source: 'stxtz',
         sender: result.sender
       });
-      convertedWithdrawals.push(result.amount);
     }
     
     // Delay between batches to avoid rate limiting
@@ -325,34 +319,7 @@ export async function fetchStXTZOperations(): Promise<StakingOperation[]> {
   saveWithdrawalCache(withdrawalCache);
   console.log(`Withdrawal processing complete: ${cacheHits} cache hits, ${cacheMisses} API lookups`);
   
-  // Analyze matching between finalizes and withdrawal requests
-  // Use a tolerance of 0.1 TEZ for floating point comparison
-  const TOLERANCE = 0.1;
-  let matchedFinalizes = 0;
-  const unmatchedFinalizes: number[] = [];
-  const matchableWithdrawals = [...convertedWithdrawals]; // Copy for matching
-  
-  for (const finalizeAmt of finalizeAmounts) {
-    // Try to find a matching withdrawal request (within tolerance)
-    const matchIndex = matchableWithdrawals.findIndex(
-      w => Math.abs(w - finalizeAmt) < TOLERANCE
-    );
-    if (matchIndex >= 0) {
-      matchedFinalizes++;
-      // Remove matched withdrawal to prevent double-matching
-      matchableWithdrawals.splice(matchIndex, 1);
-    } else {
-      unmatchedFinalizes.push(finalizeAmt);
-    }
-  }
-  
-  console.log(`Finalize matching stats:`);
-  console.log(`  Total finalizes: ${finalizeAmounts.length}`);
-  console.log(`  Matched to requests: ${matchedFinalizes}`);
-  console.log(`  Unmatched: ${unmatchedFinalizes.length}`);
-  if (unmatchedFinalizes.length > 0 && unmatchedFinalizes.length <= 10) {
-    console.log(`  Unmatched amounts: ${unmatchedFinalizes.map(a => a.toFixed(2)).join(', ')} TEZ`);
-  }
+
   
   return operations;
 }
@@ -437,4 +404,32 @@ export function calculateWalletStats(operations: StakingOperation[]): WalletStat
   
   // Sort by net position (highest first)
   return Array.from(walletMap.values()).sort((a, b) => b.netPosition - a.netPosition);
+}
+
+// Fetch stXTZ token holders
+export interface StXTZHolder {
+  account: {
+    address: string;
+    alias?: string;
+  };
+  balance: string; // Token balance is string in API
+}
+
+export async function fetchStXTZHolders(): Promise<StXTZHolder[]> {
+  try {
+    const response = await fetch('https://api.tzkt.io/v1/tokens/balances?select.values=account,balance&token.id=1763964454174721&balance.gt=0&sort.desc=balance&limit=1000');
+    if (!response.ok) throw new Error('Failed to fetch holders');
+    
+    // The select.values param makes the response an array of arrays: [[account, balance], ...]
+    const data = await response.json();
+    
+    // Map back to object structure
+    return data.map((item: any[]) => ({
+      account: item[0],
+      balance: item[1]
+    }));
+  } catch (error) {
+    console.warn('Error fetching stXTZ holders:', error);
+    return [];
+  }
 }

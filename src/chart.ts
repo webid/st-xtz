@@ -128,7 +128,6 @@ export function createStakingChart(canvasId: string, data: ChartData): Chart {
           backgroundColor: 'rgba(74, 158, 255, 0.7)',
           borderColor: 'rgba(74, 158, 255, 1)',
           borderWidth: 1,
-          stack: 'bakery',
           yAxisID: 'y'
         },
         {
@@ -137,7 +136,6 @@ export function createStakingChart(canvasId: string, data: ChartData): Chart {
           backgroundColor: 'rgba(255, 100, 100, 0.7)',
           borderColor: 'rgba(255, 100, 100, 1)',
           borderWidth: 1,
-          stack: 'bakery',
           yAxisID: 'y'
         },
         {
@@ -146,7 +144,6 @@ export function createStakingChart(canvasId: string, data: ChartData): Chart {
           backgroundColor: 'rgba(160, 160, 160, 0.7)',
           borderColor: 'rgba(160, 160, 160, 1)',
           borderWidth: 1,
-          stack: 'stxtz',
           yAxisID: 'y'
         },
         {
@@ -155,7 +152,6 @@ export function createStakingChart(canvasId: string, data: ChartData): Chart {
           backgroundColor: 'rgba(255, 150, 150, 0.7)',
           borderColor: 'rgba(255, 150, 150, 1)',
           borderWidth: 1,
-          stack: 'stxtz',
           yAxisID: 'y'
         },
         {
@@ -213,7 +209,7 @@ export function createStakingChart(canvasId: string, data: ChartData): Chart {
       },
       scales: {
         x: {
-          stacked: true,
+          stacked: false,
           ticks: {
             color: '#555',
             font: { size: 10 },
@@ -224,7 +220,7 @@ export function createStakingChart(canvasId: string, data: ChartData): Chart {
           }
         },
         y: {
-          stacked: true,
+          stacked: false,
           position: 'left',
           beginAtZero: true,
           ticks: {
